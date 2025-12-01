@@ -48,6 +48,9 @@ def index():
         'uncategorized': len([c for c in coords if c.category == 'uncategorized']),
     }
     
+    # Check for filter
+    filter_category = request.args.get('filter')
+    
     # Generate map
     if coords:
         center_lat = sum(c.latitude for c in coords) / len(coords)
@@ -154,10 +157,11 @@ def review(index: int):
             coords[index] = coord
             save_all_coordinates(coords)
             
-            # Go to next uncategorized
-            next_idx = find_next_uncategorized(coords, index)
+            # Go to next in filter category (or uncategorized by default)
+            filter_cat = request.form.get('filter_category', 'uncategorized')
+            next_idx = find_next_in_category(coords, index, filter_cat)
             if next_idx is not None:
-                return redirect(url_for('review', index=next_idx))
+                return redirect(url_for('review', index=next_idx, filter_category=filter_cat))
             return redirect(url_for('index'))
         
         elif action == 'delete':
@@ -166,10 +170,28 @@ def review(index: int):
             return redirect(url_for('index'))
         
         elif action == 'skip':
-            next_idx = find_next_uncategorized(coords, index)
+            filter_cat = request.form.get('filter_category')
+            next_idx = find_next_in_category(coords, index, filter_cat or 'uncategorized')
             if next_idx is not None:
-                return redirect(url_for('review', index=next_idx))
+                return redirect(url_for('review', index=next_idx, filter_category=filter_cat))
             return redirect(url_for('index'))
+        
+        elif action == 'duplicate':
+            # Create a copy of this coordinate for splitting multiple objects
+            new_coord = Coordinate(
+                latitude=coord.latitude,
+                longitude=coord.longitude,
+                name=f"{coord.name} (copy)",
+                address=coord.address,
+                date_saved=coord.date_saved,
+                source_url=coord.source_url,
+                category='uncategorized',
+                notes=f"Split from: {coord.name}",
+            )
+            coords.append(new_coord)
+            save_all_coordinates(coords)
+            # Go to the new coordinate
+            return redirect(url_for('review', index=len(coords) - 1))
     
     # Generate focused map
     m = folium.Map(location=[coord.latitude, coord.longitude], zoom_start=15)
@@ -192,13 +214,15 @@ def review(index: int):
     
     # Navigation info
     total = len(coords)
-    uncategorized_count = len([c for c in coords if c.category == 'uncategorized'])
+    filter_category = request.args.get('filter_category', 'uncategorized')
+    filtered_count = len([c for c in coords if c.category == filter_category])
     
     return render_template('review.html', 
         coord=coord, 
         index=index, 
         total=total,
-        uncategorized_count=uncategorized_count,
+        filtered_count=filtered_count,
+        filter_category=filter_category,
         map_html=map_html,
         prev_index=index - 1 if index > 0 else None,
         next_index=index + 1 if index < total - 1 else None,
@@ -230,6 +254,20 @@ def add_coordinate():
             return render_template('add.html', error=f"Invalid coordinates: {e}")
     
     return render_template('add.html')
+
+
+@app.route('/filter/<category>')
+def filter_by_category(category: str):
+    """Show only coordinates of a specific category, link to first one for review."""
+    coords = get_coordinates()
+    
+    # Find first coordinate of this category
+    for i, coord in enumerate(coords):
+        if coord.category == category:
+            return redirect(url_for('review', index=i, filter_category=category))
+    
+    # None found
+    return redirect(url_for('index'))
 
 
 @app.route('/api/coordinates')
@@ -271,14 +309,14 @@ def export_category(category: str):
     return jsonify(output)
 
 
-def find_next_uncategorized(coords: list, current_index: int) -> int:
-    """Find the next uncategorized coordinate after current index."""
+def find_next_in_category(coords: list, current_index: int, category: str = 'uncategorized') -> int:
+    """Find the next coordinate of given category after current index."""
     for i in range(current_index + 1, len(coords)):
-        if coords[i].category == 'uncategorized':
+        if coords[i].category == category:
             return i
     # Wrap around
     for i in range(0, current_index):
-        if coords[i].category == 'uncategorized':
+        if coords[i].category == category:
             return i
     return None
 

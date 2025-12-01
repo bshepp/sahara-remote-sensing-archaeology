@@ -196,12 +196,16 @@
                 </div>
             </div>
             
-            {% if stats.uncategorized > 0 %}
             <div class="quick-start">
                 <h3>Quick Actions</h3>
-                <a href="/review/0">Start reviewing coordinates →</a>
+                {% if stats.uncategorized > 0 %}
+                <a href="/review/0">Review uncategorized ({{ stats.uncategorized }}) →</a>
+                {% endif %}
+                {% if stats.uncertain > 0 %}
+                <a href="/filter/uncertain">Review uncertain ({{ stats.uncertain }}) →</a>
+                {% endif %}
+                <a href="/filter/site">View sites only →</a>
             </div>
-            {% endif %}
             
             <h3 style="margin-bottom: 0.5rem; font-size: 0.9rem; color: #888;">Coordinates</h3>
             <ul class="coord-list">

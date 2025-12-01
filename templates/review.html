@@ -260,7 +260,7 @@
     <div class="header">
         <h1>Review Site {{ index + 1 }} / {{ total }}</h1>
         <div class="header-nav">
-            <span class="progress"><strong>{{ uncategorized_count }}</strong> left to review</span>
+            <span class="progress"><strong>{{ filtered_count }}</strong> {{ filter_category }} left</span>
             {% if prev_index is not none %}
             <a href="/review/{{ prev_index }}">← Prev</a>
             {% endif %}
@@ -283,6 +283,7 @@
             
             <form method="post">
                 <input type="hidden" name="action" value="update" id="form-action">
+                <input type="hidden" name="filter_category" value="{{ filter_category }}">
                 
                 <div class="form-group">
                     <label>Name</label>
@@ -326,7 +327,8 @@
                 </div>
                 
                 <div class="actions">
-                    <button type="button" class="btn btn-danger" onclick="deleteSite()">Delete Site</button>
+                    <button type="button" class="btn btn-secondary" onclick="duplicateSite()" title="Create a copy for when one marker has multiple objects">Duplicate</button>
+                    <button type="button" class="btn btn-danger" onclick="deleteSite()">Delete</button>
                 </div>
             </form>
             
@@ -368,6 +370,11 @@
                 document.getElementById('form-action').value = 'delete';
                 document.querySelector('form').submit();
             }
+        }
+        
+        function duplicateSite() {
+            document.getElementById('form-action').value = 'duplicate';
+            document.querySelector('form').submit();
         }
         
         // Keyboard shortcuts
