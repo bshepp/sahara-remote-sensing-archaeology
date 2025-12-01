@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Review: {{ coord.name }} - Ruins Finder</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: #1a1a2e;
+            color: #eee;
+            min-height: 100vh;
+        }
+        
+        .header {
+            background: #16213e;
+            padding: 1rem 2rem;
+            border-bottom: 2px solid #e94560;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .header h1 {
+            font-size: 1.25rem;
+            font-weight: 500;
+        }
+        
+        .header-nav {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+        
+        .header-nav a {
+            color: #aaa;
+            text-decoration: none;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            background: #1a1a2e;
+        }
+        
+        .header-nav a:hover {
+            background: #e94560;
+            color: white;
+        }
+        
+        .progress {
+            font-size: 0.85rem;
+            color: #888;
+        }
+        
+        .progress strong {
+            color: #e94560;
+        }
+        
+        .container {
+            display: grid;
+            grid-template-columns: 400px 1fr;
+            height: calc(100vh - 60px);
+        }
+        
+        .sidebar {
+            background: #16213e;
+            padding: 1.5rem;
+            overflow-y: auto;
+        }
+        
+        .form-group {
+            margin-bottom: 1.25rem;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-size: 0.85rem;
+            color: #888;
+            text-transform: uppercase;
+        }
+        
+        .form-group input,
+        .form-group textarea,
+        .form-group select {
+            width: 100%;
+            padding: 0.75rem;
+            background: #1a1a2e;
+            border: 1px solid #333;
+            border-radius: 6px;
+            color: #eee;
+            font-size: 1rem;
+        }
+        
+        .form-group input:focus,
+        .form-group textarea:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #e94560;
+        }
+        
+        .form-group textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+        
+        .coord-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+        
+        .category-buttons {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 0.5rem;
+        }
+        
+        .category-btn {
+            padding: 1rem;
+            border: 2px solid #333;
+            border-radius: 6px;
+            background: #1a1a2e;
+            color: #eee;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.2s;
+        }
+        
+        .category-btn:hover {
+            border-color: #e94560;
+        }
+        
+        .category-btn.selected {
+            border-color: #e94560;
+            background: #e94560;
+        }
+        
+        .category-btn.ruins { border-color: #4caf50; }
+        .category-btn.ruins.selected { background: #4caf50; border-color: #4caf50; }
+        
+        .category-btn.not_ruins { border-color: #f44336; }
+        .category-btn.not_ruins.selected { background: #f44336; border-color: #f44336; }
+        
+        .category-btn.uncertain { border-color: #ff9800; }
+        .category-btn.uncertain.selected { background: #ff9800; border-color: #ff9800; }
+        
+        .actions {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 1.5rem;
+        }
+        
+        .btn {
+            flex: 1;
+            padding: 1rem;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+        
+        .btn-primary {
+            background: #e94560;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #d63850;
+        }
+        
+        .btn-secondary {
+            background: #333;
+            color: #aaa;
+        }
+        
+        .btn-secondary:hover {
+            background: #444;
+        }
+        
+        .btn-danger {
+            background: transparent;
+            border: 1px solid #f44336;
+            color: #f44336;
+        }
+        
+        .btn-danger:hover {
+            background: #f44336;
+            color: white;
+        }
+        
+        .map-container {
+            height: 100%;
+        }
+        
+        .map-container iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+        
+        .info-box {
+            background: #1a1a2e;
+            padding: 1rem;
+            border-radius: 6px;
+            margin-bottom: 1rem;
+            border-left: 3px solid #e94560;
+        }
+        
+        .info-box h3 {
+            font-size: 1rem;
+            margin-bottom: 0.5rem;
+            color: #e94560;
+        }
+        
+        .info-box p {
+            font-size: 0.85rem;
+            color: #888;
+            margin: 0.25rem 0;
+        }
+        
+        .external-links {
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid #333;
+        }
+        
+        .external-links a {
+            display: inline-block;
+            color: #4fc3f7;
+            text-decoration: none;
+            margin-right: 1rem;
+            font-size: 0.85rem;
+        }
+        
+        .external-links a:hover {
+            text-decoration: underline;
+        }
+        
+        .keyboard-hints {
+            margin-top: 1rem;
+            padding: 0.75rem;
+            background: #252542;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            color: #888;
+        }
+        
+        .keyboard-hints kbd {
+            background: #333;
+            padding: 0.2rem 0.5rem;
+            border-radius: 3px;
+            font-family: monospace;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Review Site {{ index + 1 }} / {{ total }}</h1>
+        <div class="header-nav">
+            <span class="progress"><strong>{{ uncategorized_count }}</strong> left to review</span>
+            {% if prev_index is not none %}
+            <a href="/review/{{ prev_index }}">← Prev</a>
+            {% endif %}
+            {% if next_index is not none %}
+            <a href="/review/{{ next_index }}">Next →</a>
+            {% endif %}
+            <a href="/">Back to Map</a>
+        </div>
+    </div>
+    
+    <div class="container">
+        <div class="sidebar">
+            <div class="info-box">
+                <h3>{{ coord.name }}</h3>
+                <p>{{ coord.address }}</p>
+                {% if coord.date_saved %}
+                <p>Saved: {{ coord.date_saved[:10] }}</p>
+                {% endif %}
+            </div>
+            
+            <form method="post">
+                <input type="hidden" name="action" value="update" id="form-action">
+                
+                <div class="form-group">
+                    <label>Name</label>
+                    <input type="text" name="name" value="{{ coord.name }}">
+                </div>
+                
+                <div class="coord-row">
+                    <div class="form-group">
+                        <label>Latitude</label>
+                        <input type="text" name="latitude" value="{{ coord.latitude }}" id="lat-input">
+                    </div>
+                    <div class="form-group">
+                        <label>Longitude</label>
+                        <input type="text" name="longitude" value="{{ coord.longitude }}" id="lon-input">
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label>Category</label>
+                    <div class="category-buttons">
+                        <button type="button" class="category-btn ruins {% if coord.category == 'ruins' %}selected{% endif %}" 
+                                onclick="setCategory('ruins')">Ruins</button>
+                        <button type="button" class="category-btn not_ruins {% if coord.category == 'not_ruins' %}selected{% endif %}"
+                                onclick="setCategory('not_ruins')">Not Ruins</button>
+                        <button type="button" class="category-btn uncertain {% if coord.category == 'uncertain' %}selected{% endif %}"
+                                onclick="setCategory('uncertain')">Uncertain</button>
+                        <button type="button" class="category-btn {% if coord.category == 'uncategorized' %}selected{% endif %}"
+                                onclick="setCategory('uncategorized')">Skip</button>
+                    </div>
+                    <input type="hidden" name="category" id="category-input" value="{{ coord.category }}">
+                </div>
+                
+                <div class="form-group">
+                    <label>Notes</label>
+                    <textarea name="notes" placeholder="Add any notes about this site...">{{ coord.notes }}</textarea>
+                </div>
+                
+                <div class="actions">
+                    <button type="submit" class="btn btn-primary">Save & Next</button>
+                    <button type="button" class="btn btn-secondary" onclick="skipSite()">Skip</button>
+                </div>
+                
+                <div class="actions">
+                    <button type="button" class="btn btn-danger" onclick="deleteSite()">Delete Site</button>
+                </div>
+            </form>
+            
+            <div class="external-links">
+                <a href="https://www.google.com/maps?q={{ coord.latitude }},{{ coord.longitude }}" target="_blank">Google Maps</a>
+                <a href="https://www.openstreetmap.org/?mlat={{ coord.latitude }}&mlon={{ coord.longitude }}&zoom=15" target="_blank">OpenStreetMap</a>
+                {% if coord.source_url %}
+                <a href="{{ coord.source_url }}" target="_blank">Original Link</a>
+                {% endif %}
+            </div>
+            
+            <div class="keyboard-hints">
+                <kbd>1</kbd> Ruins &nbsp;
+                <kbd>2</kbd> Not Ruins &nbsp;
+                <kbd>3</kbd> Uncertain &nbsp;
+                <kbd>Enter</kbd> Save
+            </div>
+        </div>
+        
+        <div class="map-container">
+            {{ map_html | safe }}
+        </div>
+    </div>
+    
+    <script>
+        function setCategory(category) {
+            document.getElementById('category-input').value = category;
+            document.querySelectorAll('.category-btn').forEach(btn => btn.classList.remove('selected'));
+            event.target.classList.add('selected');
+        }
+        
+        function skipSite() {
+            document.getElementById('form-action').value = 'skip';
+            document.querySelector('form').submit();
+        }
+        
+        function deleteSite() {
+            if (confirm('Delete this site? This cannot be undone.')) {
+                document.getElementById('form-action').value = 'delete';
+                document.querySelector('form').submit();
+            }
+        }
+        
+        // Keyboard shortcuts
+        document.addEventListener('keydown', function(e) {
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+            
+            switch(e.key) {
+                case '1':
+                    setCategory('ruins');
+                    break;
+                case '2':
+                    setCategory('not_ruins');
+                    break;
+                case '3':
+                    setCategory('uncertain');
+                    break;
+                case 'Enter':
+                    document.querySelector('form').submit();
+                    break;
+            }
+        });
+    </script>
+</body>
+</html>
+

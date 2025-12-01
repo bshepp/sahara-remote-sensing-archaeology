@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Import Data - Ruins Finder</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: #1a1a2e;
+            color: #eee;
+            min-height: 100vh;
+        }
+        
+        .header {
+            background: #16213e;
+            padding: 1rem 2rem;
+            border-bottom: 2px solid #e94560;
+        }
+        
+        .header h1 {
+            font-size: 1.5rem;
+            font-weight: 500;
+            color: #e94560;
+        }
+        
+        .nav {
+            display: flex;
+            gap: 1rem;
+            margin-top: 0.5rem;
+        }
+        
+        .nav a {
+            color: #aaa;
+            text-decoration: none;
+        }
+        
+        .nav a:hover {
+            color: #e94560;
+        }
+        
+        .container {
+            max-width: 600px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+        }
+        
+        .card {
+            background: #16213e;
+            padding: 2rem;
+            border-radius: 8px;
+        }
+        
+        .card h2 {
+            margin-bottom: 1rem;
+            font-weight: 500;
+        }
+        
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: #888;
+        }
+        
+        .form-group input {
+            width: 100%;
+            padding: 0.75rem;
+            background: #1a1a2e;
+            border: 1px solid #333;
+            border-radius: 6px;
+            color: #eee;
+            font-size: 1rem;
+        }
+        
+        .form-group input:focus {
+            outline: none;
+            border-color: #e94560;
+        }
+        
+        .btn {
+            padding: 1rem 2rem;
+            background: #e94560;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1rem;
+        }
+        
+        .btn:hover {
+            background: #d63850;
+        }
+        
+        .alert {
+            padding: 1rem;
+            border-radius: 6px;
+            margin-bottom: 1rem;
+        }
+        
+        .alert-success {
+            background: rgba(76, 175, 80, 0.2);
+            border: 1px solid #4caf50;
+            color: #4caf50;
+        }
+        
+        .alert-error {
+            background: rgba(244, 67, 54, 0.2);
+            border: 1px solid #f44336;
+            color: #f44336;
+        }
+        
+        .help-text {
+            font-size: 0.85rem;
+            color: #666;
+            margin-top: 0.5rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Ruins Finder</h1>
+        <nav class="nav">
+            <a href="/">← Back to Map</a>
+        </nav>
+    </div>
+    
+    <div class="container">
+        <div class="card">
+            <h2>Import Google Saved Places</h2>
+            
+            {% if success %}
+            <div class="alert alert-success">{{ success }}</div>
+            {% endif %}
+            
+            {% if error %}
+            <div class="alert alert-error">{{ error }}</div>
+            {% endif %}
+            
+            <form method="post">
+                <div class="form-group">
+                    <label>Path to Saved Places JSON file</label>
+                    <input type="text" name="filepath" value="F:\utility-projects\Saved Places.json" placeholder="C:\path\to\Saved Places.json">
+                    <p class="help-text">
+                        Export from Google Takeout → Location History → Saved Places.json
+                    </p>
+                </div>
+                
+                <button type="submit" class="btn">Import Africa Coordinates</button>
+            </form>
+            
+            <div style="margin-top: 2rem; padding-top: 1rem; border-top: 1px solid #333;">
+                <h3 style="font-size: 1rem; margin-bottom: 0.5rem;">What this does:</h3>
+                <ul style="color: #888; font-size: 0.9rem; padding-left: 1.5rem;">
+                    <li>Parses your Google Saved Places export</li>
+                    <li>Filters to coordinates within Africa</li>
+                    <li>Extracts coordinates from URLs when needed</li>
+                    <li>Merges with existing data (no duplicates)</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
+

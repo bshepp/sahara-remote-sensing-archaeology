@@ -1,0 +1,48 @@
+# CLAUDE.md
+
+Guidance for working with ruins-finder.
+
+## Project Purpose
+
+Coordinate curation tool for archaeological site detection from satellite imagery. This is Phase 1 - building a clean training dataset.
+
+## Current Status
+
+Phase 1: Coordinate curation (in progress)
+- Import Google Saved Places JSON
+- Filter to Africa
+- Review/categorize each coordinate
+- Export verified coordinates for training
+
+Future phases:
+- Phase 2: Satellite image download
+- Phase 3: Data augmentation
+- Phase 4: Model training
+- Phase 5: Wide area scanning
+
+## Commands
+
+```bash
+# Setup
+python -m venv venv
+venv\Scripts\activate  # Windows
+pip install -r requirements.txt
+
+# Run web app
+python app.py
+# Opens at http://localhost:5000
+```
+
+## File Structure
+
+- `app.py` - Flask web application
+- `src/coordinate_parser.py` - JSON parsing and filtering
+- `data/africa_coordinates.json` - Curated coordinates
+- `templates/` - HTML templates
+
+## Data Flow
+
+1. Import: Google Saved Places JSON → filter to Africa → store
+2. Review: View each coordinate on satellite map, categorize as ruins/not_ruins/uncertain
+3. Export: Get GeoJSON of verified "ruins" coordinates for training
+
