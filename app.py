@@ -17,7 +17,7 @@ from src.coordinate_parser import (
 )
 
 app = Flask(__name__, template_folder='templates', static_folder='static')
-app.secret_key = 'ruins-finder-dev-key'
+app.secret_key = 'sahara-sites-dev-key'
 
 DATA_DIR = Path(__file__).parent / "data"
 COORDS_FILE = DATA_DIR / "africa_coordinates.json"
@@ -42,8 +42,8 @@ def index():
     # Stats
     stats = {
         'total': len(coords),
-        'ruins': len([c for c in coords if c.category == 'ruins']),
-        'not_ruins': len([c for c in coords if c.category == 'not_ruins']),
+        'site': len([c for c in coords if c.category == 'site']),
+        'non_site': len([c for c in coords if c.category == 'non_site']),
         'uncertain': len([c for c in coords if c.category == 'uncertain']),
         'uncategorized': len([c for c in coords if c.category == 'uncategorized']),
     }
@@ -62,8 +62,8 @@ def index():
     for i, coord in enumerate(coords):
         # Color by category
         colors = {
-            'ruins': 'green',
-            'not_ruins': 'red',
+            'site': 'green',
+            'non_site': 'red',
             'uncertain': 'orange',
             'uncategorized': 'blue',
         }

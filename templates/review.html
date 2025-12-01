@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Review: {{ coord.name }} - Ruins Finder</title>
+    <title>Review: {{ coord.name }} - Sahara Sites</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
         
@@ -136,11 +136,11 @@
             background: #e94560;
         }
         
-        .category-btn.ruins { border-color: #4caf50; }
-        .category-btn.ruins.selected { background: #4caf50; border-color: #4caf50; }
+        .category-btn.site { border-color: #4caf50; }
+        .category-btn.site.selected { background: #4caf50; border-color: #4caf50; }
         
-        .category-btn.not_ruins { border-color: #f44336; }
-        .category-btn.not_ruins.selected { background: #f44336; border-color: #f44336; }
+        .category-btn.non_site { border-color: #f44336; }
+        .category-btn.non_site.selected { background: #f44336; border-color: #f44336; }
         
         .category-btn.uncertain { border-color: #ff9800; }
         .category-btn.uncertain.selected { background: #ff9800; border-color: #ff9800; }
@@ -303,10 +303,10 @@
                 <div class="form-group">
                     <label>Category</label>
                     <div class="category-buttons">
-                        <button type="button" class="category-btn ruins {% if coord.category == 'ruins' %}selected{% endif %}" 
-                                onclick="setCategory('ruins')">Ruins</button>
-                        <button type="button" class="category-btn not_ruins {% if coord.category == 'not_ruins' %}selected{% endif %}"
-                                onclick="setCategory('not_ruins')">Not Ruins</button>
+                        <button type="button" class="category-btn site {% if coord.category == 'site' %}selected{% endif %}" 
+                                onclick="setCategory('site')">Site</button>
+                        <button type="button" class="category-btn non_site {% if coord.category == 'non_site' %}selected{% endif %}"
+                                onclick="setCategory('non_site')">Non-Site</button>
                         <button type="button" class="category-btn uncertain {% if coord.category == 'uncertain' %}selected{% endif %}"
                                 onclick="setCategory('uncertain')">Uncertain</button>
                         <button type="button" class="category-btn {% if coord.category == 'uncategorized' %}selected{% endif %}"
@@ -339,8 +339,8 @@
             </div>
             
             <div class="keyboard-hints">
-                <kbd>1</kbd> Ruins &nbsp;
-                <kbd>2</kbd> Not Ruins &nbsp;
+                <kbd>1</kbd> Site &nbsp;
+                <kbd>2</kbd> Non-Site &nbsp;
                 <kbd>3</kbd> Uncertain &nbsp;
                 <kbd>Enter</kbd> Save
             </div>
@@ -376,10 +376,10 @@
             
             switch(e.key) {
                 case '1':
-                    setCategory('ruins');
+                    setCategory('site');
                     break;
                 case '2':
-                    setCategory('not_ruins');
+                    setCategory('non_site');
                     break;
                 case '3':
                     setCategory('uncertain');

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ruins Finder - Coordinate Curation</title>
+    <title>Sahara Sites - Coordinate Curation</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
         
@@ -83,8 +83,8 @@
             text-transform: uppercase;
         }
         
-        .stat.ruins .stat-value { color: #4caf50; }
-        .stat.not-ruins .stat-value { color: #f44336; }
+        .stat.site .stat-value { color: #4caf50; }
+        .stat.non-site .stat-value { color: #f44336; }
         .stat.uncertain .stat-value { color: #ff9800; }
         .stat.uncategorized .stat-value { color: #2196f3; }
         
@@ -106,8 +106,8 @@
             background: #252542;
         }
         
-        .coord-item.ruins { border-left-color: #4caf50; }
-        .coord-item.not_ruins { border-left-color: #f44336; }
+        .coord-item.site { border-left-color: #4caf50; }
+        .coord-item.non_site { border-left-color: #f44336; }
         .coord-item.uncertain { border-left-color: #ff9800; }
         
         .coord-item a {
@@ -166,7 +166,7 @@
 </head>
 <body>
     <div class="header">
-        <h1>Ruins Finder</h1>
+        <h1>Sahara Sites</h1>
         <nav class="nav">
             <a href="/">Map</a>
             <a href="/import">Import</a>
@@ -186,13 +186,13 @@
                     <div class="stat-value">{{ stats.uncategorized }}</div>
                     <div class="stat-label">To Review</div>
                 </div>
-                <div class="stat ruins">
-                    <div class="stat-value">{{ stats.ruins }}</div>
-                    <div class="stat-label">Ruins</div>
+                <div class="stat site">
+                    <div class="stat-value">{{ stats.site }}</div>
+                    <div class="stat-label">Sites</div>
                 </div>
-                <div class="stat not-ruins">
-                    <div class="stat-value">{{ stats.not_ruins }}</div>
-                    <div class="stat-label">Not Ruins</div>
+                <div class="stat non-site">
+                    <div class="stat-value">{{ stats.non_site }}</div>
+                    <div class="stat-label">Non-Sites</div>
                 </div>
             </div>
             

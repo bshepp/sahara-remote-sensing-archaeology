@@ -17,7 +17,7 @@ class Coordinate:
     address: str
     date_saved: str
     source_url: str
-    category: str = "uncategorized"  # ruins, not_ruins, uncertain
+    category: str = "uncategorized"  # site, non_site, uncertain
     notes: str = ""
     
     def to_dict(self) -> dict:
