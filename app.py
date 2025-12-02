@@ -321,7 +321,31 @@ def find_next_in_category(coords: list, current_index: int, category: str = 'unc
     return None
 
 
+def find_available_port(start=5000, end=5100):
+    """Find an available port in the given range."""
+    import socket
+    for port in range(start, end):
+        try:
+            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+                s.bind(('127.0.0.1', port))
+                return port
+        except OSError:
+            continue
+    return start  # fallback
+
+
 if __name__ == '__main__':
+    import webbrowser
+    import threading
+    
     DATA_DIR.mkdir(exist_ok=True)
-    app.run(debug=True, port=5000)
+    port = find_available_port()
+    url = f'http://127.0.0.1:{port}'
+    
+    print(f'\n  Sahara Sites running at: {url}\n')
+    
+    # Open browser after short delay (gives server time to start)
+    threading.Timer(1.0, lambda: webbrowser.open(url)).start()
+    
+    app.run(debug=True, port=port, use_reloader=False)
 
