@@ -6,3 +6,7 @@ __pycache__/
 # Don't commit the raw Google export
 Saved Places.json
 
+# Local safe-write artifacts (see save_coordinates)
+*.json.bak
+*.json.tmp
+

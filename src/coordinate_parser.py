@@ -115,10 +115,26 @@ def filter_africa_coordinates(coordinates: List[Coordinate]) -> List[Coordinate]
 
 
 def save_coordinates(coordinates: List[Coordinate], filepath: Path):
-    """Save coordinates to JSON file."""
+    """Save coordinates to JSON file.
+
+    Safe-write: serialize to a temp file, keep the previous version as `.bak`,
+    then atomically replace the target. Prevents data loss on crash mid-write.
+    """
+    filepath = Path(filepath)
     data = [c.to_dict() for c in coordinates]
-    with open(filepath, 'w', encoding='utf-8') as f:
+
+    tmp_path = filepath.with_suffix(filepath.suffix + '.tmp')
+    bak_path = filepath.with_suffix(filepath.suffix + '.bak')
+
+    with open(tmp_path, 'w', encoding='utf-8') as f:
         json.dump(data, f, indent=2)
+
+    if filepath.exists():
+        # Replace previous backup with current file, then move tmp into place.
+        if bak_path.exists():
+            bak_path.unlink()
+        filepath.replace(bak_path)
+    tmp_path.replace(filepath)
 
 
 def load_coordinates(filepath: Path) -> List[Coordinate]:
