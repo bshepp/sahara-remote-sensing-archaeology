@@ -4,7 +4,8 @@ Flask web app for reviewing and curating archaeological site coordinates.
 
 import json
 from pathlib import Path
-from flask import Flask, render_template, request, jsonify, redirect, url_for
+from typing import Optional
+from flask import Flask, render_template, request, jsonify, redirect, url_for, flash
 import folium
 from folium.plugins import MarkerCluster
 
@@ -140,23 +141,26 @@ def review(index: int):
         action = request.form.get('action')
         
         if action == 'update':
-            # Update coordinate
+            # Validate coordinate edits BEFORE applying any other changes,
+            # so a typo can't cause a partial save with a misleading success.
+            lat_raw = request.form.get('latitude', str(coord.latitude))
+            lon_raw = request.form.get('longitude', str(coord.longitude))
+            try:
+                new_lat = float(lat_raw)
+                new_lon = float(lon_raw)
+            except ValueError:
+                flash(f"Invalid coordinates: lat={lat_raw!r}, lon={lon_raw!r}. Nothing saved.", 'error')
+                return redirect(url_for('review', index=index,
+                                        filter_category=request.form.get('filter_category', 'uncategorized')))
+
+            coord.latitude = new_lat
+            coord.longitude = new_lon
             coord.category = request.form.get('category', coord.category)
             coord.notes = request.form.get('notes', coord.notes)
-            
-            # Allow coordinate correction
-            try:
-                new_lat = float(request.form.get('latitude', coord.latitude))
-                new_lon = float(request.form.get('longitude', coord.longitude))
-                coord.latitude = new_lat
-                coord.longitude = new_lon
-            except ValueError:
-                pass
-            
             coord.name = request.form.get('name', coord.name)
             coords[index] = coord
             save_all_coordinates(coords)
-            
+
             # Go to next in filter category (or uncategorized by default)
             filter_cat = request.form.get('filter_category', 'uncategorized')
             next_idx = find_next_in_category(coords, index, filter_cat)
@@ -309,8 +313,8 @@ def export_category(category: str):
     return jsonify(output)
 
 
-def find_next_in_category(coords: list, current_index: int, category: str = 'uncategorized') -> int:
-    """Find the next coordinate of given category after current index."""
+def find_next_in_category(coords: list, current_index: int, category: str = 'uncategorized') -> Optional[int]:
+    """Find the next coordinate of given category after current index, or None."""
     for i in range(current_index + 1, len(coords)):
         if coords[i].category == category:
             return i
