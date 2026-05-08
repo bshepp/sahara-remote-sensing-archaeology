@@ -65,6 +65,16 @@ templates/                   # Jinja templates: index, review, import, add
 
 See [CLAUDE.md](CLAUDE.md) for project context and [AGENTS.md](AGENTS.md) for conventions and pitfalls when contributing (or coding-agent assistance).
 
+## Tests
+
+```powershell
+venv\Scripts\Activate.ps1
+pip install pytest
+pytest -v
+```
+
+CI runs the same suite on Python 3.10 / 3.11 / 3.12 via [`.github/workflows/ci.yml`](.github/workflows/ci.yml) on every push and PR to `main`.
+
 ## License
 
-Not yet specified — treat as all rights reserved until a license is added.
+[MIT](LICENSE).

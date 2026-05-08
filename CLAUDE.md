@@ -31,6 +31,10 @@ pip install -r requirements.txt
 # Run web app
 python app.py
 # Opens at http://localhost:5000
+
+# Run tests
+pip install pytest
+pytest -v
 ```
 
 ## File Structure
@@ -39,6 +43,8 @@ python app.py
 - `src/coordinate_parser.py` - JSON parsing and filtering
 - `data/africa_coordinates.json` - Curated coordinates
 - `templates/` - HTML templates
+- `tests/` - pytest suite (parser + Flask routes)
+- `.github/workflows/ci.yml` - CI on Python 3.10/3.11/3.12
 
 ## Categories
 

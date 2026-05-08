@@ -13,7 +13,16 @@ venv\Scripts\Activate.ps1
 python app.py            # auto-picks free port 5000–5100, opens browser
 ```
 
-Or just double-click [start.bat](start.bat). There are **no tests, linter, or build step** — verification is manual via the browser.
+Or just double-click [start.bat](start.bat). There is no linter or build step; UI changes still need manual browser verification.
+
+## Tests
+
+```powershell
+pip install pytest
+pytest -v
+```
+
+Tests live in [tests/](tests) and cover the parser ([tests/test_coordinate_parser.py](tests/test_coordinate_parser.py)) and Flask routes ([tests/test_app.py](tests/test_app.py)). The `client` fixture in [tests/conftest.py](tests/conftest.py) monkeypatches `app.COORDS_FILE` to a temp dir, so tests never mutate [data/africa_coordinates.json](data/africa_coordinates.json) — preserve that pattern when adding tests. CI runs the same suite on Python 3.10 / 3.11 / 3.12 via [.github/workflows/ci.yml](.github/workflows/ci.yml).
 
 Standalone parser smoke test:
 
