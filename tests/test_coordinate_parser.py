@@ -140,3 +140,16 @@ class TestSaveLoadRoundtrip:
 
     def test_load_missing_returns_empty(self, tmp_path):
         assert load_coordinates(tmp_path / "nope.json") == []
+
+
+def test_load_rows_without_site_type_get_default(tmp_path):
+    """Rows saved before the site_type field existed must still load."""
+    import json
+    from src.coordinate_parser import load_coordinates
+    f = tmp_path / "old.json"
+    f.write_text(json.dumps([{
+        "latitude": 1.0, "longitude": 2.0, "name": "n", "address": "",
+        "date_saved": "", "source_url": "", "category": "site", "notes": "",
+    }]))
+    coords = load_coordinates(f)
+    assert coords[0].site_type == ""

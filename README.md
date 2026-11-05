@@ -19,7 +19,32 @@ pip install -r requirements.txt
 python app.py
 ```
 
-Or just double-click [start.bat](start.bat). The app picks a free port in 5000–5100 and opens your browser automatically.
+Linux / macOS:
+
+```bash
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+python app.py
+```
+
+Or use the launchers: double-click [start.bat](start.bat) on Windows, or run [`./start.sh`](start.sh) elsewhere. The app picks a free port in 5000–5100 and opens your browser automatically.
+
+### Running as a persistent server
+
+To keep the app running on a LAN machine and label from any browser on the network:
+
+```bash
+SAHARA_HOST=0.0.0.0 SAHARA_PORT=5000 python app.py
+```
+
+| Variable | Effect |
+|---|---|
+| `SAHARA_HOST` | Bind address. Default `127.0.0.1`. Any non-loopback host runs with Flask debug **off** and does not open a browser. |
+| `SAHARA_PORT` | Fixed port. Default: first free port in 5000–5100. |
+| `SAHARA_NO_BROWSER` | Set to anything to suppress the auto-open browser on loopback. |
+
+The app has no authentication, so only expose it on a trusted network.
 
 ### Importing coordinates
 
@@ -29,13 +54,17 @@ Or just double-click [start.bat](start.bat). The app picks a free port in 5000�
 
 ### Reviewing
 
-- Click **Uncategorized** on the index page to start at the first unreviewed coordinate.
-- Each review page shows an Esri satellite tile centered on the point. Pick a category, optionally add notes or correct the coordinates, and the app jumps to the next uncategorized one.
-- Use **Duplicate** when a single saved point covers multiple distinct features that should be labeled separately.
+Two views, same data:
+
+**Triage grid** (`/triage`) — fast first pass. Shows 6–48 satellite thumbnails per page, each a small pannable/zoomable Leaflet map centered on the point. Hover a tile and press `1` / `2` / `3` for site / non-site / uncertain (`0` clears), or click the buttons. `Enter` saves the page and loads the next batch; `S` skips a page without saving. Tiles you don't touch keep their current category. The **Open** link on each tile jumps to the full review page for that row.
+
+**Review page** (`/review/<index>`) — one point at a time with a full-size satellite map. Pick a category, set a feature type (tumulus, enclosure, keyhole, …), add notes, correct the coordinates, and the app jumps to the next one in the same category filter. Use **Duplicate** when a single saved point covers multiple distinct features that should be labeled separately.
+
+Suggested workflow: clear obvious negatives and flag candidates in the triage grid, then go through `uncertain` and `site` on the review page to add feature types and notes.
 
 ### Exporting
 
-`GET /export/site` returns a GeoJSON `FeatureCollection` of all confirmed sites — ready for the Phase 2 image-download pipeline.
+`GET /export/site` returns a GeoJSON `FeatureCollection` of all confirmed sites (with `name`, `notes`, and `site_type` properties) — ready for the Phase 2 image-download pipeline.
 
 ## Categories
 
@@ -60,7 +89,9 @@ Or just double-click [start.bat](start.bat). The app picks a free port in 5000�
 app.py                       # Flask routes, single file
 src/coordinate_parser.py     # Coordinate dataclass, GeoJSON parsing, atomic save
 data/africa_coordinates.json # Live dataset (mutated in place; .bak kept on save)
-templates/                   # Jinja templates: index, review, import, add
+templates/                   # Jinja templates: index, triage, review, import, add
+static/vendor/leaflet/       # Vendored Leaflet 1.9.4 (BSD-2) so the triage grid works offline
+start.bat / start.sh         # Launchers for Windows / Linux+macOS
 ```
 
 See [CLAUDE.md](CLAUDE.md) for project context and [AGENTS.md](AGENTS.md) for conventions and pitfalls when contributing (or coding-agent assistance).

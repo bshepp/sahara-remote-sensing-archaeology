@@ -19,9 +19,26 @@ class Coordinate:
     source_url: str
     category: str = "uncategorized"  # site, non_site, uncertain
     notes: str = ""
+    site_type: str = ""  # free text, e.g. tumulus, enclosure, keyhole; see SITE_TYPES
     
     def to_dict(self) -> dict:
         return asdict(self)
+
+
+# Suggested feature types for `site` rows. Free text is still allowed; these
+# just populate the <datalist> in the review UI so labels stay consistent.
+SITE_TYPES = [
+    "tumulus",
+    "cairn",
+    "keyhole",
+    "crescent",
+    "enclosure",
+    "stone circle",
+    "wall",
+    "structure",
+    "field system",
+    "other",
+]
 
 
 # Africa bounding box (approximate)

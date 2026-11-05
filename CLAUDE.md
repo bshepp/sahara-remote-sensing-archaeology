@@ -12,7 +12,10 @@ Phase 1: Coordinate curation (in progress)
 - Import Google Saved Places JSON
 - Filter to Africa
 - Review/categorize each coordinate as site/non-site/uncertain
+  - `/triage` grid for fast first-pass labeling, `/review/<i>` for detail + feature type + notes
 - Export verified coordinates for training
+
+Known data gaps (as of Nov 2026): ~900 of 993 points still uncategorized; only 6 confirmed sites, all in one cluster near 25N 8E and none with feature types or notes. Expect to need external positive sources (OSM `historic=archaeological_site`, published tumulus surveys) before Phase 4.
 
 Future phases:
 - Phase 2: Satellite image download
@@ -28,9 +31,11 @@ python -m venv venv
 venv\Scripts\activate  # Windows
 pip install -r requirements.txt
 
-# Run web app
+# Run web app (local; auto-picks a port in 5000-5100, opens browser)
 python app.py
-# Opens at http://localhost:5000
+
+# Run as a persistent LAN server (debug off, no browser)
+SAHARA_HOST=0.0.0.0 SAHARA_PORT=5000 python app.py
 
 # Run tests
 pip install pytest
@@ -40,9 +45,10 @@ pytest -v
 ## File Structure
 
 - `app.py` - Flask web application
-- `src/coordinate_parser.py` - JSON parsing and filtering
+- `src/coordinate_parser.py` - JSON parsing and filtering; `SITE_TYPES` suggestion list
 - `data/africa_coordinates.json` - Curated coordinates
-- `templates/` - HTML templates
+- `templates/` - HTML templates (index, triage, review, import, add)
+- `static/vendor/leaflet/` - Vendored Leaflet for the triage grid
 - `tests/` - pytest suite (parser + Flask routes)
 - `.github/workflows/ci.yml` - CI on Python 3.10/3.11/3.12
 
@@ -52,6 +58,8 @@ pytest -v
 - **non_site** - Not an archaeological feature (natural formation, modern, etc.)
 - **uncertain** - Needs more research or better imagery
 - **uncategorized** - Not yet reviewed
+
+Sites also carry an optional free-text `site_type` (tumulus, cairn, keyhole, crescent, enclosure, stone circle, wall, structure, field system, other).
 
 ## Data Flow
 

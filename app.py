@@ -3,6 +3,7 @@ Flask web app for reviewing and curating archaeological site coordinates.
 """
 
 import json
+import os
 from pathlib import Path
 from typing import Optional
 from flask import Flask, render_template, request, jsonify, redirect, url_for, flash
@@ -11,11 +12,15 @@ from folium.plugins import MarkerCluster
 
 from src.coordinate_parser import (
     Coordinate,
+    SITE_TYPES,
     load_coordinates,
     save_coordinates,
     parse_google_places_json,
     filter_africa_coordinates,
 )
+
+CATEGORIES = ('site', 'non_site', 'uncertain', 'uncategorized')
+ESRI_TILES = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'
 
 app = Flask(__name__, template_folder='templates', static_folder='static')
 app.secret_key = 'sahara-sites-dev-key'
@@ -157,6 +162,7 @@ def review(index: int):
             coord.longitude = new_lon
             coord.category = request.form.get('category', coord.category)
             coord.notes = request.form.get('notes', coord.notes)
+            coord.site_type = request.form.get('site_type', coord.site_type).strip()
             coord.name = request.form.get('name', coord.name)
             coords[index] = coord
             save_all_coordinates(coords)
@@ -202,7 +208,7 @@ def review(index: int):
     
     # Add satellite tile layer
     folium.TileLayer(
-        tiles='https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+        tiles=ESRI_TILES,
         attr='Esri',
         name='Satellite',
     ).add_to(m)
@@ -228,9 +234,89 @@ def review(index: int):
         filtered_count=filtered_count,
         filter_category=filter_category,
         map_html=map_html,
+        site_types=SITE_TYPES,
         prev_index=index - 1 if index > 0 else None,
         next_index=index + 1 if index < total - 1 else None,
     )
+
+
+@app.route('/triage', methods=['GET', 'POST'])
+def triage():
+    """Grid view: label many coordinates per page from satellite thumbnails.
+
+    GET  /triage?category=uncategorized&offset=0&per_page=12&zoom=16
+    POST form fields `cat_<index>` (one per tile, value in CATEGORIES) plus
+         `offset`, `per_page`, `zoom`, `category`. Only tiles whose value
+         differs from the stored category are written.
+
+    Indices are positions in the full list (same as /review/<index>), so a
+    tile's "Open" link lands on the full review page for that row.
+    """
+    coords = get_coordinates()
+
+    if request.method == 'POST':
+        changed = 0
+        for key, value in request.form.items():
+            if not key.startswith('cat_'):
+                continue
+            try:
+                idx = int(key[4:])
+            except ValueError:
+                continue
+            if idx < 0 or idx >= len(coords) or value not in CATEGORIES:
+                continue
+            if coords[idx].category != value:
+                coords[idx].category = value
+                changed += 1
+        if changed:
+            save_all_coordinates(coords)
+            flash(f"Saved {changed} label{'s' if changed != 1 else ''}.", 'info')
+
+        # The filtered list shrinks as rows get labeled, so keep the same
+        # offset unless the user explicitly skipped the page.
+        offset = _int_arg(request.form, 'offset', 0)
+        if request.form.get('action') == 'skip':
+            offset += _int_arg(request.form, 'per_page', 12)
+        return redirect(url_for(
+            'triage',
+            category=request.form.get('category', 'uncategorized'),
+            offset=offset,
+            per_page=request.form.get('per_page', 12),
+            zoom=request.form.get('zoom', 16),
+        ))
+
+    category = request.args.get('category', 'uncategorized')
+    if category not in CATEGORIES:
+        category = 'uncategorized'
+    per_page = max(1, min(48, _int_arg(request.args, 'per_page', 12)))
+    zoom = max(12, min(19, _int_arg(request.args, 'zoom', 16)))
+
+    matching = [(i, c) for i, c in enumerate(coords) if c.category == category]
+    offset = max(0, min(_int_arg(request.args, 'offset', 0), max(len(matching) - 1, 0)))
+    page = matching[offset:offset + per_page]
+
+    return render_template(
+        'triage.html',
+        tiles=page,
+        category=category,
+        categories=CATEGORIES,
+        offset=offset,
+        per_page=per_page,
+        zoom=zoom,
+        remaining=len(matching),
+        total=len(coords),
+        tile_url=ESRI_TILES,
+        has_prev=offset > 0,
+        has_next=offset + per_page < len(matching),
+    )
+
+
+def _int_arg(source, key: str, default: int) -> int:
+    """Parse an int from a request dict, falling back to default on junk."""
+    try:
+        return int(source.get(key, default))
+    except (TypeError, ValueError):
+        return default
 
 
 @app.route('/add', methods=['GET', 'POST'])
@@ -304,6 +390,7 @@ def export_category(category: str):
                 'properties': {
                     'name': c.name,
                     'notes': c.notes,
+                    'site_type': c.site_type,
                 }
             }
             for c in filtered
@@ -325,13 +412,13 @@ def find_next_in_category(coords: list, current_index: int, category: str = 'unc
     return None
 
 
-def find_available_port(start=5000, end=5100):
+def find_available_port(start=5000, end=5100, host='127.0.0.1'):
     """Find an available port in the given range."""
     import socket
     for port in range(start, end):
         try:
             with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-                s.bind(('127.0.0.1', port))
+                s.bind((host, port))
                 return port
         except OSError:
             continue
@@ -341,15 +428,24 @@ def find_available_port(start=5000, end=5100):
 if __name__ == '__main__':
     import webbrowser
     import threading
-    
+
     DATA_DIR.mkdir(exist_ok=True)
-    port = find_available_port()
-    url = f'http://127.0.0.1:{port}'
-    
+
+    # Local desktop use (default): bind loopback, pick a free port, open browser.
+    # Persistent LAN server: SAHARA_HOST=0.0.0.0 SAHARA_PORT=5000 python app.py
+    # Non-loopback hosts run with debug off so the Werkzeug debugger is never
+    # reachable from other machines.
+    host = os.environ.get('SAHARA_HOST', '127.0.0.1')
+    is_local = host in ('127.0.0.1', 'localhost')
+    port_env = os.environ.get('SAHARA_PORT')
+    port = int(port_env) if port_env else find_available_port(host=host)
+    url = f'http://{host}:{port}'
+
     print(f'\n  Sahara Sites running at: {url}\n')
-    
-    # Open browser after short delay (gives server time to start)
-    threading.Timer(1.0, lambda: webbrowser.open(url)).start()
-    
-    app.run(debug=True, port=port, use_reloader=False)
+
+    if is_local and not os.environ.get('SAHARA_NO_BROWSER'):
+        # Open browser after short delay (gives server time to start)
+        threading.Timer(1.0, lambda: webbrowser.open(url)).start()
+
+    app.run(host=host, debug=is_local, port=port, use_reloader=False)
 

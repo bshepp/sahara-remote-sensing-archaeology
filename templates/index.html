@@ -169,6 +169,7 @@
         <h1>Sahara Sites</h1>
         <nav class="nav">
             <a href="/">Map</a>
+            <a href="/triage">Triage</a>
             <a href="/import">Import</a>
             <a href="/add">Add Coordinate</a>
             <a href="/api/coordinates">API</a>
@@ -199,7 +200,8 @@
             <div class="quick-start">
                 <h3>Quick Actions</h3>
                 {% if stats.uncategorized > 0 %}
-                <a href="/review/0">Review uncategorized ({{ stats.uncategorized }}) →</a>
+                <a href="/triage">Triage grid: uncategorized ({{ stats.uncategorized }}) →</a>
+                <a href="/filter/uncategorized">Review one at a time ({{ stats.uncategorized }}) →</a>
                 {% endif %}
                 {% if stats.uncertain > 0 %}
                 <a href="/filter/uncertain">Review uncertain ({{ stats.uncertain }}) →</a>

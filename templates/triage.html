@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Triage: {{ category }} - Sahara Sites</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='vendor/leaflet/leaflet.css') }}">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: #1a1a2e;
+            color: #eee;
+            min-height: 100vh;
+        }
+
+        .header {
+            background: #16213e;
+            padding: 0.75rem 1.5rem;
+            border-bottom: 2px solid #e94560;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 1rem;
+            flex-wrap: wrap;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .header h1 { font-size: 1.15rem; font-weight: 500; }
+        .header h1 strong { color: #e94560; }
+
+        .header-nav { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; }
+
+        .header-nav a, .header-nav button, .header-nav select {
+            color: #ddd;
+            text-decoration: none;
+            padding: 0.5rem 0.9rem;
+            border-radius: 4px;
+            background: #1a1a2e;
+            border: 1px solid #333;
+            font-size: 0.9rem;
+            cursor: pointer;
+        }
+
+        .header-nav a:hover, .header-nav button:hover { background: #e94560; color: white; }
+        .header-nav .btn-primary { background: #e94560; border-color: #e94560; color: white; font-weight: 500; }
+        .header-nav .btn-primary:hover { background: #d63850; }
+        .header-nav label { font-size: 0.8rem; color: #888; }
+
+        .flash {
+            background: #1f3b2e; border: 1px solid #4caf50; color: #dfd;
+            padding: 0.5rem 1.5rem; font-size: 0.9rem;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 1rem;
+            padding: 1rem 1.5rem;
+        }
+
+        .tile {
+            background: #16213e;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 2px solid #333;
+            transition: border-color 0.15s;
+        }
+
+        .tile:hover, .tile.focused { border-color: #4fc3f7; }
+        .tile.site { border-color: #4caf50; }
+        .tile.non_site { border-color: #f44336; }
+        .tile.uncertain { border-color: #ff9800; }
+
+        .tile .map { height: 260px; background: #000; }
+
+        .tile-body { padding: 0.6rem 0.75rem; }
+
+        .tile-name {
+            font-size: 0.85rem; font-weight: 500;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+
+        .tile-meta {
+            font-size: 0.75rem; color: #888;
+            display: flex; justify-content: space-between; margin-bottom: 0.5rem;
+        }
+
+        .tile-meta a { color: #4fc3f7; text-decoration: none; }
+        .tile-meta a:hover { text-decoration: underline; }
+
+        .cat-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.35rem; }
+
+        .cat-btn {
+            padding: 0.5rem 0.25rem;
+            border: 1px solid #333;
+            border-radius: 4px;
+            background: #1a1a2e;
+            color: #ccc;
+            cursor: pointer;
+            font-size: 0.8rem;
+        }
+
+        .cat-btn:hover { border-color: #aaa; }
+        .cat-btn.site.selected { background: #4caf50; border-color: #4caf50; color: white; }
+        .cat-btn.non_site.selected { background: #f44336; border-color: #f44336; color: white; }
+        .cat-btn.uncertain.selected { background: #ff9800; border-color: #ff9800; color: white; }
+
+        .empty { padding: 3rem; text-align: center; color: #888; }
+
+        .keyboard-hints {
+            padding: 0.5rem 1.5rem 1.5rem; font-size: 0.8rem; color: #888;
+        }
+        .keyboard-hints kbd {
+            background: #333; padding: 0.15rem 0.45rem; border-radius: 3px; font-family: monospace;
+        }
+
+        .leaflet-container { background: #000; }
+    </style>
+</head>
+<body>
+    <form method="post" id="triage-form">
+        <input type="hidden" name="category" value="{{ category }}">
+        <input type="hidden" name="offset" value="{{ offset }}">
+        <input type="hidden" name="per_page" value="{{ per_page }}">
+        <input type="hidden" name="zoom" value="{{ zoom }}">
+        <input type="hidden" name="action" value="save" id="form-action">
+
+        <div class="header">
+            <h1>Triage <strong>{{ category }}</strong> &middot; {{ offset + 1 }}&ndash;{{ offset + tiles|length }} of {{ remaining }}</h1>
+            <div class="header-nav">
+                <label>Zoom
+                    <select onchange="reload({zoom: this.value})">
+                        {% for z in [14, 15, 16, 17, 18] %}
+                        <option value="{{ z }}" {% if z == zoom %}selected{% endif %}>{{ z }}</option>
+                        {% endfor %}
+                    </select>
+                </label>
+                <label>Per page
+                    <select onchange="reload({per_page: this.value, offset: 0})">
+                        {% for n in [6, 12, 24, 48] %}
+                        <option value="{{ n }}" {% if n == per_page %}selected{% endif %}>{{ n }}</option>
+                        {% endfor %}
+                    </select>
+                </label>
+                <label>Show
+                    <select onchange="reload({category: this.value, offset: 0})">
+                        {% for c in categories %}
+                        <option value="{{ c }}" {% if c == category %}selected{% endif %}>{{ c }}</option>
+                        {% endfor %}
+                    </select>
+                </label>
+                {% if has_prev %}
+                <a href="{{ url_for('triage', category=category, offset=[offset - per_page, 0]|max, per_page=per_page, zoom=zoom) }}">&larr; Prev</a>
+                {% endif %}
+                {% if has_next %}
+                <button type="button" onclick="skipPage()">Skip page &rarr;</button>
+                {% endif %}
+                <button type="submit" class="btn-primary" title="Enter">Save &amp; next</button>
+                <a href="/">Map</a>
+            </div>
+        </div>
+
+        {% with messages = get_flashed_messages() %}
+          {% for msg in messages %}
+          <div class="flash">{{ msg }}</div>
+          {% endfor %}
+        {% endwith %}
+
+        {% if tiles %}
+        <div class="grid" id="grid">
+            {% for idx, coord in tiles %}
+            <div class="tile {{ coord.category }}" data-index="{{ idx }}" data-lat="{{ coord.latitude }}" data-lon="{{ coord.longitude }}">
+                <div class="map" id="map-{{ idx }}"></div>
+                <div class="tile-body">
+                    <div class="tile-name" title="{{ coord.name }}">{{ coord.name }}</div>
+                    <div class="tile-meta">
+                        <span>{{ coord.latitude | round(5) }}, {{ coord.longitude | round(5) }}</span>
+                        <span>
+                            <a href="/review/{{ idx }}?filter_category={{ category }}" target="_blank" title="Full review page">Open</a>
+                            &middot;
+                            <a href="https://www.google.com/maps?q={{ coord.latitude }},{{ coord.longitude }}" target="_blank">Google</a>
+                        </span>
+                    </div>
+                    <input type="hidden" name="cat_{{ idx }}" value="{{ coord.category }}" class="cat-input">
+                    <div class="cat-row">
+                        <button type="button" class="cat-btn site {% if coord.category == 'site' %}selected{% endif %}" data-cat="site">1 Site</button>
+                        <button type="button" class="cat-btn non_site {% if coord.category == 'non_site' %}selected{% endif %}" data-cat="non_site">2 Non-site</button>
+                        <button type="button" class="cat-btn uncertain {% if coord.category == 'uncertain' %}selected{% endif %}" data-cat="uncertain">3 Uncertain</button>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        <div class="keyboard-hints">
+            Hover a tile, then <kbd>1</kbd> Site &nbsp; <kbd>2</kbd> Non-site &nbsp; <kbd>3</kbd> Uncertain &nbsp; <kbd>0</kbd> Clear &nbsp;
+            <kbd>Enter</kbd> Save &amp; next &nbsp; <kbd>S</kbd> Skip page. Scroll on a tile to zoom, drag to pan. Unlabeled tiles stay {{ category }}.
+        </div>
+        {% else %}
+        <div class="empty">Nothing left in <strong>{{ category }}</strong>. <a href="/" style="color:#4fc3f7">Back to map</a></div>
+        {% endif %}
+    </form>
+
+    <script src="{{ url_for('static', filename='vendor/leaflet/leaflet.js') }}"></script>
+    <script>
+        const TILE_URL = {{ tile_url | tojson }};
+        const ZOOM = {{ zoom }};
+        const ORIGINAL = {{ category | tojson }};
+        let focused = null;
+
+        const haveLeaflet = typeof L !== 'undefined';
+
+        document.querySelectorAll('.tile').forEach(tile => {
+            const lat = parseFloat(tile.dataset.lat);
+            const lon = parseFloat(tile.dataset.lon);
+            const mapEl = tile.querySelector('.map');
+            if (haveLeaflet) {
+                const map = L.map(mapEl, {
+                    zoomControl: false,
+                    attributionControl: false,
+                    scrollWheelZoom: true,
+                    doubleClickZoom: false,
+                }).setView([lat, lon], ZOOM);
+                L.tileLayer(TILE_URL, { maxZoom: 19 }).addTo(map);
+                L.circleMarker([lat, lon], {
+                    radius: 7, color: '#e94560', weight: 2, fill: false, interactive: false,
+                }).addTo(map);
+                // Double-click a map to recenter on the point.
+                map.on('dblclick', () => map.setView([lat, lon], ZOOM));
+            } else {
+                // Leaflet failed to load; labeling still works via the "Open" link.
+                mapEl.innerHTML = '<div style="padding:1rem;color:#888;font-size:0.85rem">Map library failed to load. Use the Open link.</div>';
+            }
+
+            tile.addEventListener('mouseenter', () => setFocus(tile));
+            tile.querySelectorAll('.cat-btn').forEach(btn => {
+                btn.addEventListener('click', () => setCategory(tile, btn.dataset.cat));
+            });
+        });
+
+        function setFocus(tile) {
+            if (focused) focused.classList.remove('focused');
+            focused = tile;
+            tile.classList.add('focused');
+        }
+
+        function setCategory(tile, cat) {
+            // Clicking the already-selected category clears back to the page's category.
+            if (tile.querySelector('.cat-input').value === cat) cat = ORIGINAL;
+            setCategoryExact(tile, cat);
+        }
+
+        function skipPage() {
+            document.getElementById('form-action').value = 'skip';
+            document.getElementById('triage-form').submit();
+        }
+
+        function reload(params) {
+            const url = new URL(window.location.href);
+            url.searchParams.set('category', {{ category | tojson }});
+            url.searchParams.set('offset', {{ offset }});
+            url.searchParams.set('per_page', {{ per_page }});
+            url.searchParams.set('zoom', {{ zoom }});
+            for (const [k, v] of Object.entries(params)) url.searchParams.set(k, v);
+            window.location.href = url.toString();
+        }
+
+        document.addEventListener('keydown', function (e) {
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT' || e.target.tagName === 'TEXTAREA') return;
+            const keyMap = { '1': 'site', '2': 'non_site', '3': 'uncertain', '0': ORIGINAL };
+            if (e.key in keyMap && focused) {
+                e.preventDefault();
+                // Keys set directly (no toggle), so '0' always clears.
+                setCategoryExact(focused, keyMap[e.key]);
+            } else if (e.key === 'Enter') {
+                e.preventDefault();
+                document.getElementById('triage-form').submit();
+            } else if (e.key === 's' || e.key === 'S') {
+                e.preventDefault();
+                skipPage();
+            }
+        });
+
+        function setCategoryExact(tile, cat) {
+            tile.querySelector('.cat-input').value = cat;
+            tile.classList.remove('site', 'non_site', 'uncertain', 'uncategorized');
+            tile.classList.add(cat);
+            tile.querySelectorAll('.cat-btn').forEach(b => {
+                b.classList.toggle('selected', b.dataset.cat === cat);
+            });
+        }
+    </script>
+</body>
+</html>
